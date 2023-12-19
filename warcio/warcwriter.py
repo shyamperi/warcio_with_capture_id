@@ -137,8 +137,8 @@ class WARCWriter(BaseWARCWriter):
         self._write_warc_record(self.out, record)
 
     def _do_write_req_resp(self, req, resp, params):
-        self._write_warc_record(self.out, resp)
         self._write_warc_record(self.out, req)
+        self._write_warc_record(self.out, resp)
 
 
 # ============================================================================
