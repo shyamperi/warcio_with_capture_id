@@ -25,6 +25,7 @@ class RecordingStream(object):
         self.recorder = recorder
 
         self.recorder.set_remote_ip(self._get_remote_ip())
+        self.recorder.set_capture_id(self._get_capture_id())
 
     def _get_remote_ip(self):
         try:
@@ -43,6 +44,10 @@ class RecordingStream(object):
 
         except Exception:  #pragma: no cover
             return None
+
+    def _get_capture_id(self):
+        # Pick it from the invoker
+        return 'Pick it from the invoker'
 
     # Used in PY2 Only
     def read(self, amt=None):  #pragma: no cover
@@ -131,7 +136,7 @@ class RecordingHTTPConnection(httplib.HTTPConnection):
 
 # ============================================================================
 class RequestRecorder(object):
-    def __init__(self, writer, filter_func=None, record_ip=True):
+    def __init__(self, writer, filter_func=None, record_ip=True, capture_id=None):
         self.writer = writer
         self.filter_func = filter_func
         self.request_out = None
@@ -143,6 +148,7 @@ class RequestRecorder(object):
         self.lock = threading.Lock()
         self.warc_headers = {}
         self.record_ip = record_ip
+        self.capture_id = capture_id
 
     def start_tunnel(self):
         self.connect_host = self.connect_port = None
@@ -162,6 +168,10 @@ class RequestRecorder(object):
     def set_remote_ip(self, remote_ip):
         if self.record_ip and remote_ip:  #pragma: no cover
             self.warc_headers['WARC-IP-Address'] = remote_ip
+
+    def set_capture_id(self, capture_id):
+        if self.capture_id and capture_id:  #pragma: no cover
+            self.warc_headers['WARC-CAPTURE-ID'] = self.capture_id
 
     def write_request(self, buff):
         if self.started_req:
@@ -244,7 +254,7 @@ httplib.HTTPConnection = RecordingHTTPConnection
 
 @contextmanager
 def capture_http(warc_writer=None, filter_func=None, append=True,
-                record_ip=True, **kwargs):
+                record_ip=True, capture_id=None, **kwargs):
     out = None
     if warc_writer == None:
         if 'gzip' not in kwargs:
@@ -257,7 +267,7 @@ def capture_http(warc_writer=None, filter_func=None, append=True,
         warc_writer = WARCWriter(out, **kwargs)
 
     try:
-        recorder = RequestRecorder(warc_writer, filter_func, record_ip=record_ip)
+        recorder = RequestRecorder(warc_writer, filter_func, record_ip=record_ip, capture_id=capture_id)
         RecordingHTTPConnection.local.recorder = recorder
         yield warc_writer
 
